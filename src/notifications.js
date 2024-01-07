@@ -55,7 +55,7 @@ async function setupNotifications() {
     name: 'periodic-background-sync',
   });
   if (status.state === 'denied') {
-    throw new Error('Debes habilitar las tareas periódicas para esta página web');
+    throw new Error('Debes instalar la aplicación y habilitar las tareas periódicas');
   }
     
   // Elimina todas las tareas periódicas registradas previamente

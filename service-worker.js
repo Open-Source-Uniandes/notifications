@@ -1,3 +1,25 @@
+// PWA
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open('mi-cache').then((cache) => {
+      return cache.addAll([
+        '/',
+        '/index.html',
+        '/manifest.json',
+        '/logo.jpeg',
+      ]);
+    })
+  );
+});
+
+self.addEventListener('fetch', (event) => {
+  event.respondWith(
+    caches.match(event.request).then((response) => {
+      return response || fetch(event.request);
+    })
+  );
+});
+
 self.addEventListener("periodicsync", (event) => {
   // `notifications/${nrc}` es el ID de la tarea periódica
   const nrc = event.tag.split('/')[1];
