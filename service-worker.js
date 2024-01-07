@@ -3,10 +3,9 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open('mi-cache').then((cache) => {
       return cache.addAll([
-        '/',
-        '/index.html',
-        '/manifest.json',
-        '/logo.jpeg',
+        'index.html',
+        'manifest.json',
+        'logo.jpeg',
       ]);
     })
   );
