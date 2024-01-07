@@ -1,8 +1,18 @@
 #root {
-  max-width: 1280px;
+  max-width: 720px;
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
+  box-sizing: border-box;
+}
+
+.logo-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: row;
+  flex-wrap: wrap;
+  column-gap: 2em;
 }
 
 .logo {
@@ -10,33 +20,116 @@
   padding: 1.5em;
   will-change: filter;
   transition: filter 300ms;
+  border-radius: 30%;
 }
 .logo:hover {
   filter: drop-shadow(0 0 2em #646cffaa);
 }
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+
+h1 {
+  margin: 0;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.highlight {
+  color: #888;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1em;
+  margin-top: 2em;
 }
 
 .card {
-  padding: 2em;
+  border: 1px solid #ccc;
+  border-radius: 0.5em;
+  padding: 1em 2em;
+  width: 100%;
+  box-sizing: border-box;
+
+  .card-summary {
+    font-weight: 500;
+    color: #646cff;
+  }
+
+  hr {
+    margin: 1em auto;
+  }
 }
 
-.read-the-docs {
-  color: #888;
+form {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5em;
+
+  input {
+    font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+    padding: 0.5em;
+    border: 1px solid #ccc;
+    border-radius: 0.5em;
+    width: 100%;
+    max-width: 10em;
+  }
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  margin-top: 1.5em;
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+
+  details {
+
+    summary {
+      text-align: left;
+      text-overflow: ellipsis;
+      text-transform: capitalize;
+      white-space: nowrap;
+      overflow: hidden;
+      width: 100%;
+      
+      span {
+        font-weight: 500;
+        color: #646cff;
+      }
+    }
+    
+    article {
+      display: grid;
+      grid-template-columns: 1fr 40px;
+      gap: 1em;
+      align-items: center;
+      justify-content: center;
+      padding: 1em 2em;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+
+      section {
+        text-align: left;
+
+        h3, p {
+          margin: 0;
+        }
+      }
+
+      img {
+        width: 100%;
+        transition: transform 300ms;
+        cursor: pointer;
+      }
+      img:hover {
+        transform: rotate(90deg);
+        transition: transform 300ms;
+        filter: drop-shadow(0 0 1em #b7b9ff);
+      }
+    }
+  }
 }
