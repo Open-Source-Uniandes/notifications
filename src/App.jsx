@@ -8,6 +8,11 @@ import './App.css'
 import { createNotification, deleteNotification } from './notifications.js'
 
 const API = "https://ofertadecursos.uniandes.edu.co/api/courses"
+const previouslySavedSections = JSON.parse(localStorage.getItem('notifications/v1/sections')) || [];
+previouslySavedSections.forEach(section => {
+  createNotification(section.nrc)
+});
+
 
 function SectionDetails({ sectionJSON, btnType, callback }) {
 
@@ -49,9 +54,9 @@ function SectionDetails({ sectionJSON, btnType, callback }) {
   </details>
 )}
 
-function App() {
 
-  const previouslySavedSections = JSON.parse(localStorage.getItem('notifications/v1/sections')) || [];
+
+function App() {
 
   const [searchedSections, setSearchedSections] = useState(null);
   const [savedSections, setSavedSections] = useState(previouslySavedSections);
@@ -72,15 +77,6 @@ function App() {
   useEffect(() => {
     localStorage.setItem('notifications/v1/sections', JSON.stringify(savedSections));
   }, [savedSections]);
-
-
-  // Estado inicial de las notificaciones
-
-  useEffect(() => {
-    previouslySavedSections.forEach(section => {
-      createNotification(section.nrc)
-    });
-  }, [previouslySavedSections]);
 
 
   // Errores

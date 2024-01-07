@@ -1,3 +1,5 @@
+const intervalIdMap = new Map();
+
 async function setupNotifications() {
 
   // NOTIFICATIONS API
@@ -31,7 +33,7 @@ async function setupNotifications() {
   } else if (!navigator.serviceWorker.controller) {
     // Registra el Service Worker si no hay uno registrado
     navigator.serviceWorker
-      .register('./src/service-worker.js')
+      .register('/service-worker.js', { scope: '/' })
       .then(registration => {
         console.info('Service Worker registered with scope:', registration.scope);
       })
@@ -42,22 +44,35 @@ async function setupNotifications() {
 
   // Espera hasta que el Service Worker esté listo y activo
   await navigator.serviceWorker.ready;
+
+  // Escucha los mensajes enviados desde el Service Worker
+  navigator.serviceWorker.controller.addEventListener('message', (event) => {
+      if (event.data?.action === 'intervalId') {
+        const intervalId = event.data.intervalId;
+        const nrc = event.data.nrc;
+        intervalIdMap.set(nrc, intervalId);
+      }
+    });
+
+  console.info("Notifications setup done");
 }
 
-let setupIsDone = new Promise((resolve) => {
+let setupIsDone = new Promise((resolve) => { 
   resolve(setupNotifications());
 });
 
+
 async function createNotification(nrc) {
   await setupIsDone;
-  console.log({ nrc, contr: navigator.serviceWorker.controller, sw: navigator.serviceWorker.ready });
   navigator.serviceWorker.controller.postMessage({ action: 'register', nrc });
-  console.log("Exito");
+  console.log(intervalIdMap);
 }
 
 async function deleteNotification(nrc) {
   await setupIsDone;
-  navigator.serviceWorker.controller.postMessage({ action: 'delete', nrc });
+  navigator.serviceWorker.controller.postMessage({ action: 'delete', intervalId: intervalIdMap.get(nrc) });
+  intervalIdMap.delete(nrc);
+  console.log(intervalIdMap);
 }
 
 export { createNotification, deleteNotification };
