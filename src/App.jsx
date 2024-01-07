@@ -78,7 +78,6 @@ function App() {
     localStorage.setItem('notifications/v1/sections', JSON.stringify(savedSections));
   }, [savedSections]);
 
-
   // Errores
 
   const [errors, setErrors] = useState([]);

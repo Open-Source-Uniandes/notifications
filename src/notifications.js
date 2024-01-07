@@ -42,17 +42,17 @@ async function setupNotifications() {
       });
   }
 
+  // Escuchar los mensajes enviados desde el Service Worker
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    if (event.data?.action === 'intervalId') {
+      const intervalId = event.data.intervalId;
+      const nrc = event.data.nrc;
+      intervalIdMap.set(nrc, intervalId);
+    }
+  });
+
   // Espera hasta que el Service Worker esté listo y activo
   await navigator.serviceWorker.ready;
-
-  // Escucha los mensajes enviados desde el Service Worker
-  navigator.serviceWorker.controller.addEventListener('message', (event) => {
-      if (event.data?.action === 'intervalId') {
-        const intervalId = event.data.intervalId;
-        const nrc = event.data.nrc;
-        intervalIdMap.set(nrc, intervalId);
-      }
-    });
 
   console.info("Notifications setup done");
 }
@@ -65,14 +65,12 @@ let setupIsDone = new Promise((resolve) => {
 async function createNotification(nrc) {
   await setupIsDone;
   navigator.serviceWorker.controller.postMessage({ action: 'register', nrc });
-  console.log(intervalIdMap);
 }
 
 async function deleteNotification(nrc) {
   await setupIsDone;
   navigator.serviceWorker.controller.postMessage({ action: 'delete', intervalId: intervalIdMap.get(nrc) });
   intervalIdMap.delete(nrc);
-  console.log(intervalIdMap);
 }
 
 export { createNotification, deleteNotification };
