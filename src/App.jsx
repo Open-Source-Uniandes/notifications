@@ -5,13 +5,9 @@ import createIcon from './assets/create.svg'
 import deleteIcon from './assets/delete.svg'
 import './App.css'
 
-import { createNotification, deleteNotification } from './notifications.js'
+import { setupNotifications, createNotification, deleteNotification } from './notifications.js'
 
 const API = "https://ofertadecursos.uniandes.edu.co/api/courses"
-const previouslySavedSections = JSON.parse(localStorage.getItem('notifications/v1/sections')) || [];
-previouslySavedSections.forEach(section => {
-  createNotification(section.nrc)
-});
 
 
 function SectionDetails({ sectionJSON, btnType, callback }) {
@@ -52,31 +48,12 @@ function SectionDetails({ sectionJSON, btnType, callback }) {
         <img src={btnType === "create" ? createIcon : deleteIcon} alt="Toggle Notification" onClick={() => callback(sectionJSON)} />
     </article>
   </details>
-)}
+  )
+}
 
 
 
 function App() {
-
-  const [searchedSections, setSearchedSections] = useState(null);
-  const [savedSections, setSavedSections] = useState(previouslySavedSections);
-
-  const createSection = (section) => { 
-    if (savedSections.some(savedSection => savedSection.llave === section.llave)) return;
-    setSavedSections([...savedSections, section])
-    createNotification(section.nrc)
-  }
-
-  const deleteSection = (section) => {
-    setSavedSections(savedSections.filter(savedSection => savedSection.llave !== section.llave))
-    deleteNotification(section.nrc)
-  }
-
-  // Guardar secciones en localStorage
-
-  useEffect(() => {
-    localStorage.setItem('notifications/v1/sections', JSON.stringify(savedSections));
-  }, [savedSections]);
 
   // Errores
 
@@ -94,6 +71,58 @@ function App() {
       window.removeEventListener('error', errorHandler);
     };
   }, []);
+
+  // States
+
+  const [searchedSections, setSearchedSections] = useState(null);
+  const [savedSections, setSavedSections] = useState([]);
+
+  const createSection = async (section) => { 
+    if (section == null) throw new Error('No se encontró la sección');
+    if (savedSections.some(savedSection => savedSection.llave === section.llave)) return;
+    setSavedSections([...savedSections, section])
+    createNotification(section.nrc).catch(error => {
+      setErrors((prevErrors) => [...prevErrors, error]);
+    });
+  }
+
+  const deleteSection = async (section) => {
+    setSavedSections(savedSections.filter(savedSection => savedSection.llave !== section.llave))
+    deleteNotification(section.nrc).catch(error => {
+      setErrors((prevErrors) => [...prevErrors, error]);
+    });
+  }
+
+  // On firstime load
+  useEffect(() => {
+
+    (async () => {
+
+      // Preparar notificaciones
+      await setupNotifications()
+        .catch(error => setErrors((prevErrors) => [...prevErrors, error]));
+
+      // Cargar secciones guardadas en localStorage
+      const previouslySavedSections = JSON.parse(localStorage.getItem('notifications/v1/sections')) || [];
+
+      // Mapearlas con la última información de la API y guardarlas
+      previouslySavedSections.forEach(section => {
+        fetch(`${API}?nameInput=${section.nrc}`)
+          .then(response => response.json())
+          .then(([sectionJSON]) => createSection(sectionJSON))
+          .catch(error => setErrors((prevErrors) => [...prevErrors, error]));
+      });
+
+    })(); // IIFE
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Guardar secciones en localStorage
+
+  useEffect(() => {
+    localStorage.setItem('notifications/v1/sections', JSON.stringify(savedSections));
+  }, [savedSections]);
 
   return (
     <>
@@ -143,6 +172,7 @@ function App() {
               fetch(`${API}?nameInput=${query}`)
                 .then(response => response.json())
                 .then(setSearchedSections)
+                .catch(error => setErrors((prevErrors) => [...prevErrors, error]));
             }
           }>
             <label htmlFor="query">NRC, Código o Nombre:</label>

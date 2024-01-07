@@ -1,26 +1,7 @@
-self.addEventListener('message', (event) => {
-
-  if (event.data?.action === 'register') {
-
-    const nrc = event.data.nrc;
-
-    // Ejecutar la función de verificación de disponibilidad inmediatamente
-    checkAvailability(nrc);
-
-    // Ejecutar la función de verificación de disponibilidad cada 5 minutos
-    const intervalId = setInterval(() => {
-      checkAvailability(nrc);
-    }, 10000);//1 * 60 * 1000);
-
-    // Envia el interval ID al cliente
-    event.source.postMessage({ action: 'intervalId', nrc, intervalId });
-  }
-  
-  else if (event.data?.action === 'delete') {
-    const intervalId = event.data.intervalId;
-    // Detener el intervalo y eliminar el ID almacenado
-    clearInterval(intervalId, 10);
-  }
+self.addEventListener("periodicsync", (event) => {
+  // `notifications/${nrc}` es el ID de la tarea periódica
+  const nrc = event.tag.split('/')[1];
+  event.waitUntil(checkAvailability(nrc));
 });
 
 function checkAvailability(nrc) {
@@ -43,6 +24,6 @@ function checkAvailability(nrc) {
       }
     })
     .catch(error => {
-      console.error('Error fetching data:', error);
+      throw new Error('Error fetching data:', error);
     });
 }

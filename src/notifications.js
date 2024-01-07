@@ -1,5 +1,3 @@
-const intervalIdMap = new Map();
-
 async function setupNotifications() {
 
   // NOTIFICATIONS API
@@ -38,39 +36,57 @@ async function setupNotifications() {
         console.info('Service Worker registered with scope:', registration.scope);
       })
       .catch(function (error) {
-        console.error('Service Worker registration failed:', error);
+        throw new Error('Service Worker registration failed:', error.message);
       });
   }
-
-  // Escuchar los mensajes enviados desde el Service Worker
-  navigator.serviceWorker.addEventListener('message', (event) => {
-    if (event.data?.action === 'intervalId') {
-      const intervalId = event.data.intervalId;
-      const nrc = event.data.nrc;
-      intervalIdMap.set(nrc, intervalId);
-    }
-  });
 
   // Espera hasta que el Service Worker esté listo y activo
   await navigator.serviceWorker.ready;
 
+  // PERIODIC SYNC API
+
+  // Revisa si el navegador soporta tareas periódicas
+  if (!('periodicSync' in await navigator.serviceWorker.ready)) {
+    throw new Error('El navegador no soporta tareas periódicas');
+  }
+
+  // Revisa si el navegador soporta Background Sync
+  const status = await navigator.permissions.query({
+    name: 'periodic-background-sync',
+  });
+  if (status.state === 'denied') {
+    throw new Error('Debes habilitar las tareas periódicas para esta página web');
+  }
+    
+  // Elimina todas las tareas periódicas registradas previamente
+  await navigator.serviceWorker.getRegistrations().then(registrations => {
+    registrations.forEach(async registration => {
+      await registration.periodicSync.getTags().then(tags => {
+        tags.forEach(tag => {
+          registration.periodicSync.unregister(tag);
+        });
+      });
+    });
+  });
+      
+
   console.info("Notifications setup done");
 }
 
-let setupIsDone = new Promise((resolve) => { 
-  resolve(setupNotifications());
-});
-
 
 async function createNotification(nrc) {
-  await setupIsDone;
-  navigator.serviceWorker.controller.postMessage({ action: 'register', nrc });
+  // Registra una nueva tarea periódica
+  const registration = await navigator.serviceWorker.ready;
+  registration.periodicSync.register(`notifications/${nrc}`, {
+    // El intervalo mínimo es de 5 minutos
+    minInterval: 5 * 60 * 1000,
+  });
 }
 
 async function deleteNotification(nrc) {
-  await setupIsDone;
-  navigator.serviceWorker.controller.postMessage({ action: 'delete', intervalId: intervalIdMap.get(nrc) });
-  intervalIdMap.delete(nrc);
+  // Elimina la tarea periódica
+  const registration = await navigator.serviceWorker.ready;
+  registration.periodicSync.unregister(`notifications/${nrc}`);
 }
 
-export { createNotification, deleteNotification };
+export { setupNotifications, createNotification, deleteNotification };
