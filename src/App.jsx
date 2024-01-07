@@ -5,6 +5,8 @@ import createIcon from './assets/create.svg'
 import deleteIcon from './assets/delete.svg'
 import './App.css'
 
+import { createNotification, deleteNotification } from './notifications.js'
+
 const API = "https://ofertadecursos.uniandes.edu.co/api/courses"
 
 function SectionDetails({ sectionJSON, btnType, callback }) {
@@ -49,25 +51,54 @@ function SectionDetails({ sectionJSON, btnType, callback }) {
 
 function App() {
 
-  if (!localStorage.getItem('notifications/v1/sections')) {
-    localStorage.setItem('notifications/v1/sections', JSON.stringify([]))
-  }
+  const previouslySavedSections = JSON.parse(localStorage.getItem('notifications/v1/sections')) || [];
 
   const [searchedSections, setSearchedSections] = useState(null);
-  const [savedSections, setSavedSections] = useState(JSON.parse(localStorage.getItem('notifications/v1/sections')));
+  const [savedSections, setSavedSections] = useState(previouslySavedSections);
 
   const createSection = (section) => { 
     if (savedSections.some(savedSection => savedSection.llave === section.llave)) return;
     setSavedSections([...savedSections, section])
+    createNotification(section.nrc)
   }
 
   const deleteSection = (section) => {
     setSavedSections(savedSections.filter(savedSection => savedSection.llave !== section.llave))
+    deleteNotification(section.nrc)
   }
+
+  // Guardar secciones en localStorage
 
   useEffect(() => {
     localStorage.setItem('notifications/v1/sections', JSON.stringify(savedSections));
   }, [savedSections]);
+
+
+  // Estado inicial de las notificaciones
+
+  useEffect(() => {
+    previouslySavedSections.forEach(section => {
+      createNotification(section.nrc)
+    });
+  }, [previouslySavedSections]);
+
+
+  // Errores
+
+  const [errors, setErrors] = useState([]);
+
+  useEffect(() => {
+    const errorHandler = (errorEvent) => {
+      setErrors((prevErrors) => [...prevErrors, errorEvent.error]);
+    };
+
+    window.addEventListener('error', errorHandler);
+
+    // Asegúrate de limpiar el evento cuando el componente se desmonte
+    return () => {
+      window.removeEventListener('error', errorHandler);
+    };
+  }, []);
 
   return (
     <>
@@ -78,11 +109,14 @@ function App() {
         <h1>Mi Horario Uniandes</h1>
       </div>
       <p className="highlight">
-        Este servicio de notificaciones es <strong>experimental</strong> y nos encontramos desarrollándolo
+        Este servicio de notificaciones es <strong>experimental</strong>. Puede no funcionar en todos los navegadores. Recomendamos mantener la aplicación abierta en una pestaña aparte.
         <br/>
-        Por favor cuéntanos tu experiencia al correo <a href="mailto:opensource@uniandes.edu.co">opensource@uniandes.edu.co
-          </a>
+        Por favor cuéntanos tu experiencia al correo <a href="mailto:opensource@uniandes.edu.co">opensource@uniandes.edu.co</a>
       </p>
+
+      <div className='error-container'>
+        { errors.map((error, i) => <p key={`error-${i}`} className='error'>{error.message}</p>) }
+      </div>
 
       <main>
         {

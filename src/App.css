@@ -34,6 +34,24 @@ h1 {
   color: #888;
 }
 
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: stretch;
+  gap: 0.5em;
+}
+
+.error {
+  color: #ff646c;
+  font-weight: 500;
+  background-color: #ff646c11;
+  padding: 0.5em 1em;
+  border-radius: 0.5em;
+  border: 1px solid #ff646c22;
+  margin: 0;
+}
+
 main {
   display: flex;
   flex-direction: column;
