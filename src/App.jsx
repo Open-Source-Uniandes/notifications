@@ -1,12 +1,13 @@
 /* eslint-disable react/prop-types */
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import logo from '/logo.jpeg'
 import createIcon from './assets/create.svg'
+import deleteIcon from './assets/delete.svg'
 import './App.css'
 
 const API = "https://ofertadecursos.uniandes.edu.co/api/courses"
 
-function SectionDetails({ sectionJSON }) {
+function SectionDetails({ sectionJSON, btnType, callback }) {
 
   let { 
     nrc,
@@ -41,14 +42,32 @@ function SectionDetails({ sectionJSON }) {
           <p><strong>NRC: </strong>{nrc}</p>
           <p><strong>Profesores:</strong> {instructors.join(', ')}</p>
         </section>
-        <img src={ createIcon } alt="Create Notification" />
+        <img src={btnType === "create" ? createIcon : deleteIcon} alt="Toggle Notification" onClick={() => callback(sectionJSON)} />
     </article>
   </details>
 )}
 
 function App() {
 
+  if (!localStorage.getItem('notifications/v1/sections')) {
+    localStorage.setItem('notifications/v1/sections', JSON.stringify([]))
+  }
+
   const [searchedSections, setSearchedSections] = useState(null);
+  const [savedSections, setSavedSections] = useState(JSON.parse(localStorage.getItem('notifications/v1/sections')));
+
+  const createSection = (section) => { 
+    if (savedSections.some(savedSection => savedSection.llave === section.llave)) return;
+    setSavedSections([...savedSections, section])
+  }
+
+  const deleteSection = (section) => {
+    setSavedSections(savedSections.filter(savedSection => savedSection.llave !== section.llave))
+  }
+
+  useEffect(() => {
+    localStorage.setItem('notifications/v1/sections', JSON.stringify(savedSections));
+  }, [savedSections]);
 
   return (
     <>
@@ -66,9 +85,23 @@ function App() {
       </p>
 
       <main>
-        <details className='card'>
-          <summary className='card-summary'>Revisa tus notificaciones</summary>
-        </details>
+        {
+          savedSections.length == 0 ? null :
+            <details className='card'>
+              <summary className='card-summary'>Revisa tus notificaciones</summary>
+              <p className="highlight">Elimina aquí las notificaciones que ya no necesites</p>
+              <hr />
+              <ul>
+                {
+                  savedSections.map(section => (
+                    <li key={section.llave}>
+                      <SectionDetails sectionJSON={section} btnType="delete" callback={ deleteSection } />
+                    </li>
+                  ))
+                }
+              </ul>
+            </details>
+        }
         
         <details className='card'>
           <summary className='card-summary'>Agrega una nueva notificación</summary>
@@ -92,8 +125,8 @@ function App() {
               searchedSections.length == 0 ?
                 <p>No encontramos resultados para tu búsqueda</p>
                 : searchedSections.map(section => (
-                  <li key={section.llave}>
-                    <SectionDetails sectionJSON={section} />
+                  <li key={section.nrc}>
+                    <SectionDetails sectionJSON={section} btnType="create" callback={ createSection } />
                   </li>
                 ))
             }
