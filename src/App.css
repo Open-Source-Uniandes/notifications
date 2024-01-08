@@ -149,6 +149,13 @@ ul {
         transition: transform 300ms;
         filter: drop-shadow(0 0 1em #b7b9ff);
       }
+
+      @media screen and (max-width: 600px) {
+        grid-template-columns: 1fr 30px;
+        gap: 0.5em;
+        padding: 0.5em 0 0 1em;
+        font-size: 0.8em;
+      }
     }
   }
 }
