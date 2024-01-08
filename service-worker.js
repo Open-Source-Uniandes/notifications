@@ -3,10 +3,9 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open('mi-cache').then((cache) => {
       return cache.addAll([
-        '/',
-        '/index.html',
-        '/manifest.json',
-        '/logo.jpeg',
+        '/notifications/index.html',
+        '/notifications/assets/manifest.json',
+        '/notifications/logo.jpeg',
       ]);
     })
   );
@@ -21,6 +20,7 @@ self.addEventListener('fetch', (event) => {
 });
 
 self.addEventListener("periodicsync", (event) => {
+  console.log("Periodic sync event fired");
   // `notifications/${nrc}` es el ID de la tarea periódica
   const nrc = event.tag.split('/')[1];
   event.waitUntil(checkAvailability(nrc));
@@ -40,7 +40,7 @@ function checkAvailability(nrc) {
       if (seatsDifference <= 5) {
         const notificationOptions = {
           body: `¡Quedan ${seatsDifference} cupos disponibles para la sección ${data.section} de ${data.class}-${data.course}! (NRC: ${data.nrc})`,
-          icon: '/logo.jpeg',
+          icon: 'logo.jpeg',
         };
         self.registration.showNotification(`${data.class}-${data.course}: ${data.title}`, notificationOptions);
       }

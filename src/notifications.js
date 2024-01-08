@@ -31,7 +31,7 @@ async function setupNotifications() {
   } else if (!navigator.serviceWorker.controller) {
     // Registra el Service Worker si no hay uno registrado
     navigator.serviceWorker
-      .register('/service-worker.js', { scope: '/' })
+      .register('service-worker.js')
       .then(registration => {
         console.info('Service Worker registered with scope:', registration.scope);
       })
@@ -79,7 +79,15 @@ async function createNotification(nrc) {
   const registration = await navigator.serviceWorker.ready;
   registration.periodicSync.register(`notifications/${nrc}`, {
     // El intervalo mínimo es de 5 minutos
-    minInterval: 5 * 60 * 1000,
+    minInterval: 0.5 * 60 * 1000,
+  });
+}
+
+async function sendTestNotification() {
+  const registration = await navigator.serviceWorker.ready;
+  registration.showNotification('Notificaciones activadas', {
+    body: '¡Muy bien! Recibirás notificaciones cada 5 minutos de esta materia si quedan menos de 5 cupos disponibles',
+    icon: 'logo.jpeg',
   });
 }
 
@@ -89,4 +97,4 @@ async function deleteNotification(nrc) {
   registration.periodicSync.unregister(`notifications/${nrc}`);
 }
 
-export { setupNotifications, createNotification, deleteNotification };
+export { setupNotifications, createNotification, deleteNotification, sendTestNotification };

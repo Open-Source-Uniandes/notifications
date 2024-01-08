@@ -5,7 +5,7 @@ import createIcon from './assets/create.svg'
 import deleteIcon from './assets/delete.svg'
 import './App.css'
 
-import { setupNotifications, createNotification, deleteNotification } from './notifications.js'
+import { sendTestNotification, setupNotifications, createNotification, deleteNotification } from './notifications.js'
 
 const API = "https://ofertadecursos.uniandes.edu.co/api/courses"
 
@@ -55,6 +55,9 @@ function SectionDetails({ sectionJSON, btnType, callback }) {
 
 function App() {
 
+  // Estado de notificaciones
+  const [notificationsReady, setNotificationsReady] = useState(false); 
+
   // Errores
 
   const [errors, setErrors] = useState([]);
@@ -78,15 +81,20 @@ function App() {
   const [savedSections, setSavedSections] = useState([]);
 
   const createSection = async (section) => { 
+    if (!notificationsReady) await setupNotifications();
+    setNotificationsReady(true);
     if (section == null) throw new Error('No se encontró la sección');
     if (savedSections.some(savedSection => savedSection.llave === section.llave)) return;
     setSavedSections([...savedSections, section])
     createNotification(section.nrc).catch(error => {
       setErrors((prevErrors) => [...prevErrors, error]);
     });
+    sendTestNotification();
   }
 
   const deleteSection = async (section) => {
+    if (!notificationsReady) await setupNotifications();
+    setNotificationsReady(true);
     setSavedSections(savedSections.filter(savedSection => savedSection.llave !== section.llave))
     deleteNotification(section.nrc).catch(error => {
       setErrors((prevErrors) => [...prevErrors, error]);
@@ -96,14 +104,17 @@ function App() {
   // On firstime load
   useEffect(() => {
 
+    // Cargar secciones guardadas en localStorage
+    const previouslySavedSections = JSON.parse(localStorage.getItem('notifications/v1/sections')) || [];
+
+    if (previouslySavedSections.length === 0) return;
+
     (async () => {
 
       // Preparar notificaciones
       await setupNotifications()
         .catch(error => setErrors((prevErrors) => [...prevErrors, error]));
-
-      // Cargar secciones guardadas en localStorage
-      const previouslySavedSections = JSON.parse(localStorage.getItem('notifications/v1/sections')) || [];
+      setNotificationsReady(true);
 
       // Mapearlas con la última información de la API y guardarlas
       previouslySavedSections.forEach(section => {
@@ -112,6 +123,8 @@ function App() {
           .then(([sectionJSON]) => createSection(sectionJSON))
           .catch(error => setErrors((prevErrors) => [...prevErrors, error]));
       });
+
+      sendTestNotification();
 
     })(); // IIFE
 

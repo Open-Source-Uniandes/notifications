@@ -9,7 +9,7 @@ export default defineConfig({
     copy({
       targets: [
         { src: 'src/assets/*', dest: 'dist/assets' },
-        { src: 'service-worker.js', dest: 'dist' }
+        { src: 'service-worker.js', dest: 'dist' },
       ],
       hook: 'writeBundle'
     })

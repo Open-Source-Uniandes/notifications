@@ -1,10 +1,9 @@
 {
   "short_name": "Mi Horario Uniandes",
   "name": "Notificaciones - Mi Horario Uniandes",
-  "start_url": "/",
+  "start_url": "/notifications",
   "background_color": "#282828",
   "display": "standalone",
-  "scope": "/",
   "theme_color": "#282828",
   "orientation": "portrait-primary",
   "icons": [
