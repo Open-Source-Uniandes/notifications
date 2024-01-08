@@ -113,6 +113,7 @@ ul {
       white-space: nowrap;
       overflow: hidden;
       width: 100%;
+      max-width: calc(100vw - 132px);
       
       span {
         font-weight: 500;

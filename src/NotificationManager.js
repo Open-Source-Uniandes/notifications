@@ -4,13 +4,17 @@ class NotificationManager {
 
   sectionIds = [];
 
-  constructor(callback) {
+  constructor() {
+    this.setupNotifications();
+  }
+
+  setCallback(callback) {
     this.callback = callback;
   }
 
   setupNotifications = async () => {
 
-    console.log('Setting up notifications');
+    console.info('Setting up notifications');
     
     let detail = '';
 
@@ -39,6 +43,7 @@ class NotificationManager {
 
     // Crear el intervalo de revisión
     setInterval(() => {
+      console.info('Ejecutando intervalo de notificaciones');
       this.repeat();
     }, 5 * 60 * 1000);
 
@@ -90,12 +95,4 @@ class NotificationManager {
 
 }
 
-class NotificationManagerSingleton {
-  notificationManager = null;
-  getInstance = () => {
-    if (!this.notificationManager) this.notificationManager = new NotificationManager();
-    return this.notificationManager;
-  }
-}
-
-export default new NotificationManagerSingleton ;
+export default new NotificationManager();

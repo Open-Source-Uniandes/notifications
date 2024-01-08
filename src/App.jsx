@@ -3,7 +3,7 @@ import logo from '/logo.jpeg'
 import { useState, useEffect } from 'react'
 import { SectionDetails } from './SectionDetails.jsx'
 import APIManager from './APIManager.js'
-import NotificationManagerSingleton from './NotificationManager.js';
+import NotificationManager from './NotificationManager.js';
 
 function App() {
 
@@ -14,7 +14,6 @@ function App() {
   });
 
   const createSection = (section) => { 
-    if (timeToNextUpdate === null) startNotifications();
     if (savedSections.some(savedSection => savedSection.id === section.id)) return;
     setSavedSections([...savedSections, section])
   }
@@ -29,7 +28,7 @@ function App() {
 
   // Manejo de notificaciones
 
-  const NotificationManager = NotificationManagerSingleton.getInstance((newSections, timeLeft) => {
+  NotificationManager.setCallback((newSections, timeLeft) => {
     updateSections(newSections);
     const intervalId = setInterval(() => {
       timeLeft -= 1;
@@ -58,13 +57,7 @@ function App() {
 
   // Tiempo hasta la próxima actualización
   const [timeToNextUpdate, setTimeToNextUpdate] = useState(() => {
-    if (savedSections.length == 0) return null;
-    return 5;
-  });
-
-  function startNotifications () {
-    NotificationManager.setupNotifications();
-    let timeLeft = timeToNextUpdate;
+    let timeLeft = 5;
     const intervalId = setInterval(() => {
       timeLeft -= 1;
       setTimeToNextUpdate(timeLeft);
@@ -73,16 +66,8 @@ function App() {
         return;
       }
     }, 1000);
-  }
-
-  useEffect(() => {
-    if (timeToNextUpdate !== null) { 
-
-      console.log('Setting up notifications with timeToNextUpdate', timeToNextUpdate);
-
-      startNotifications();
-    }
-  }, []);
+    return timeLeft;
+  });
 
   // Sincronización 
 
@@ -112,24 +97,22 @@ function App() {
       </div>
 
       <main>
-        {
-          savedSections.length == 0 ? null :
-            <details className='card'>
-              <summary className='card-summary'>Revisa tus notificaciones</summary>
-              <p className="highlight">Elimina aquí las notificaciones que ya no necesites</p>
-              <p className='highlight'>Los datos se actualizarán nuevamente en { timeToNextUpdate } segundos.</p>
-              <hr />
-              <ul>
-                {
-                  savedSections.map(section => (
-                    <li key={section.id}>
-                      <SectionDetails sectionJSON={section} btnType="delete" callback={ deleteSection } />
-                    </li>
-                  ))
-                }
-              </ul>
-            </details>
-        }
+
+        <details className='card'>
+          <summary className='card-summary'>Revisa tus notificaciones</summary>
+          <p className="highlight">Elimina aquí las notificaciones que ya no necesites</p>
+          <p className='highlight'>Los datos se actualizarán nuevamente en { timeToNextUpdate } segundos.</p>
+          <hr />
+          <ul>
+            {
+              savedSections.map(section => (
+                <li key={section.id}>
+                  <SectionDetails sectionJSON={section} btnType="delete" callback={ deleteSection } />
+                </li>
+              ))
+            }
+          </ul>
+        </details>
         
         <details className='card'>
           <summary className='card-summary'>Agrega una nueva notificación</summary>
