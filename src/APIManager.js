@@ -19,7 +19,9 @@ class APIManager {
     let nrc = id.split("-")[1];
     let results = await this.searchQuery(nrc)
       .then(data => data.find(section => section.id === id));
-    if (!results) throw new Error("No se encontró la sección: ", id);
+    if (!results) window.dispatchEvent(
+      new CustomEvent("customErrorMessage", { detail : `No se encontró la sección: ${id}` })
+    );
     return results;
   }
 

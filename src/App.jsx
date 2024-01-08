@@ -3,7 +3,7 @@ import logo from '/logo.jpeg'
 import { useState, useEffect } from 'react'
 import { SectionDetails } from './SectionDetails.jsx'
 import APIManager from './APIManager.js'
-import NotificationManager from './NotificationManager.js';
+import NotificationManagerSingleton from './NotificationManager.js';
 
 function App() {
 
@@ -14,6 +14,7 @@ function App() {
   });
 
   const createSection = (section) => { 
+    if (timeToNextUpdate === null) startNotifications();
     if (savedSections.some(savedSection => savedSection.id === section.id)) return;
     setSavedSections([...savedSections, section])
   }
@@ -28,7 +29,17 @@ function App() {
 
   // Manejo de notificaciones
 
-  NotificationManager.setCallback(updateSections);
+  const NotificationManager = NotificationManagerSingleton.getInstance((newSections, timeLeft) => {
+    updateSections(newSections);
+    const intervalId = setInterval(() => {
+      timeLeft -= 1;
+      setTimeToNextUpdate(timeLeft);
+      if (timeLeft <= 0 ) {
+        clearInterval(intervalId);
+        return;
+      }
+    }, 1000);
+  });
 
   // Manejo de searchedSections
 
@@ -37,14 +48,41 @@ function App() {
   // Manejo de errores
 
   const [errors, setErrors] = useState(() => {
-    window.onunhandledrejection = (event) => {
-      setErrors([...errors, event.reason.message])
-    }
-    window.onerror = (message) => { 
-      setErrors([...errors, message])
-    }
+
+    window.addEventListener('customErrorMessage', (event) => {
+      setErrors([...errors, event.detail])
+    });
+
     return [];
   });
+
+  // Tiempo hasta la próxima actualización
+  const [timeToNextUpdate, setTimeToNextUpdate] = useState(() => {
+    if (savedSections.length == 0) return null;
+    return 5;
+  });
+
+  function startNotifications () {
+    NotificationManager.setupNotifications();
+    let timeLeft = timeToNextUpdate;
+    const intervalId = setInterval(() => {
+      timeLeft -= 1;
+      setTimeToNextUpdate(timeLeft);
+      if (timeLeft <= 0 ) {
+        clearInterval(intervalId);
+        return;
+      }
+    }, 1000);
+  }
+
+  useEffect(() => {
+    if (timeToNextUpdate !== null) { 
+
+      console.log('Setting up notifications with timeToNextUpdate', timeToNextUpdate);
+
+      startNotifications();
+    }
+  }, []);
 
   // Sincronización 
 
@@ -70,7 +108,7 @@ function App() {
       </p>
 
       <div className='error-container'>
-        { errors.map((error, i) => <p key={`error-${i}`} className='error'>{error.message}</p>) }
+        { errors.map((error, i) => <p key={`error-${i}`} className='error'>{error}</p>) }
       </div>
 
       <main>
@@ -79,6 +117,7 @@ function App() {
             <details className='card'>
               <summary className='card-summary'>Revisa tus notificaciones</summary>
               <p className="highlight">Elimina aquí las notificaciones que ya no necesites</p>
+              <p className='highlight'>Los datos se actualizarán nuevamente en { timeToNextUpdate } segundos.</p>
               <hr />
               <ul>
                 {
