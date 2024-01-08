@@ -1,141 +1,59 @@
-/* eslint-disable react/prop-types */
-import { useState, useEffect } from 'react'
-import logo from '/logo.jpeg'
-import createIcon from './assets/create.svg'
-import deleteIcon from './assets/delete.svg'
 import './App.css'
-
-import { sendTestNotification, setupNotifications, createNotification, deleteNotification } from './notifications.js'
-
-const API = "https://ofertadecursos.uniandes.edu.co/api/courses"
-
-
-function SectionDetails({ sectionJSON, btnType, callback }) {
-
-  let { 
-    nrc,
-    class: classcode,
-    course,
-    section,
-    credits,
-    title,
-    instructors,
-    maxenrol,
-    enrolled,
-  } = sectionJSON
-
-  // Capitalize first letter of each word
-  title = title.toLowerCase().replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())
-  instructors = instructors.map(instructor =>
-    instructor.name.trim().toLowerCase().replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())
-  )
-
-  return (
-  <details>
-    <summary>
-      <span>
-        {`${classcode}-${course} Sección ${section}: `}
-      </span>
-      {`${title}`}
-    </summary>
-      <article>
-        <section>
-          <h3>{ title }</h3>
-          <p><strong>{`${credits} créditos - ${maxenrol - enrolled} cupos`}</strong></p>
-          <p><strong>NRC: </strong>{nrc}</p>
-          <p><strong>Profesores:</strong> {instructors.join(', ')}</p>
-        </section>
-        <img src={btnType === "create" ? createIcon : deleteIcon} alt="Toggle Notification" onClick={() => callback(sectionJSON)} />
-    </article>
-  </details>
-  )
-}
-
-
+import logo from '/logo.jpeg'
+import { useState, useEffect } from 'react'
+import { SectionDetails } from './SectionDetails.jsx'
+import APIManager from './APIManager.js'
+import NotificationManager from './NotificationManager.js';
 
 function App() {
 
-  // Estado de notificaciones
-  const [notificationsReady, setNotificationsReady] = useState(false); 
+  // Secciones guardadas
+  const [savedSections, setSavedSections] = useState(() => {
+    const previouslySavedSections = JSON.parse(localStorage.getItem('notifications/v1/sections')) || [];
+    return previouslySavedSections;
+  });
 
-  // Errores
-
-  const [errors, setErrors] = useState([]);
-
-  useEffect(() => {
-    const errorHandler = (errorEvent) => {
-      setErrors((prevErrors) => [...prevErrors, errorEvent.error]);
-    };
-
-    window.addEventListener('error', errorHandler);
-
-    // Asegúrate de limpiar el evento cuando el componente se desmonte
-    return () => {
-      window.removeEventListener('error', errorHandler);
-    };
-  }, []);
-
-  // States
-
-  const [searchedSections, setSearchedSections] = useState(null);
-  const [savedSections, setSavedSections] = useState([]);
-
-  const createSection = async (section) => { 
-    if (!notificationsReady) await setupNotifications();
-    setNotificationsReady(true);
-    if (section == null) throw new Error('No se encontró la sección');
-    if (savedSections.some(savedSection => savedSection.llave === section.llave)) return;
+  const createSection = (section) => { 
+    if (savedSections.some(savedSection => savedSection.id === section.id)) return;
     setSavedSections([...savedSections, section])
-    createNotification(section.nrc).catch(error => {
-      setErrors((prevErrors) => [...prevErrors, error]);
-    });
-    sendTestNotification();
   }
 
   const deleteSection = async (section) => {
-    if (!notificationsReady) await setupNotifications();
-    setNotificationsReady(true);
-    setSavedSections(savedSections.filter(savedSection => savedSection.llave !== section.llave))
-    deleteNotification(section.nrc).catch(error => {
-      setErrors((prevErrors) => [...prevErrors, error]);
-    });
+    setSavedSections(savedSections.filter(savedSection => savedSection.id !== section.id))
   }
 
-  // On firstime load
-  useEffect(() => {
+  const updateSections = (newSections) => { 
+    setSavedSections(newSections);
+  }
 
-    // Cargar secciones guardadas en localStorage
-    const previouslySavedSections = JSON.parse(localStorage.getItem('notifications/v1/sections')) || [];
+  // Manejo de notificaciones
 
-    if (previouslySavedSections.length === 0) return;
+  NotificationManager.setCallback(updateSections);
 
-    (async () => {
+  // Manejo de searchedSections
 
-      // Preparar notificaciones
-      await setupNotifications()
-        .catch(error => setErrors((prevErrors) => [...prevErrors, error]));
-      setNotificationsReady(true);
+  const [searchedSections, setSearchedSections] = useState(null);
 
-      // Mapearlas con la última información de la API y guardarlas
-      previouslySavedSections.forEach(section => {
-        fetch(`${API}?nameInput=${section.nrc}`)
-          .then(response => response.json())
-          .then(([sectionJSON]) => createSection(sectionJSON))
-          .catch(error => setErrors((prevErrors) => [...prevErrors, error]));
-      });
+  // Manejo de errores
 
-      sendTestNotification();
+  const [errors, setErrors] = useState(() => {
+    window.onunhandledrejection = (event) => {
+      setErrors([...errors, event.reason.message])
+    }
+    window.onerror = (message) => { 
+      setErrors([...errors, message])
+    }
+    return [];
+  });
 
-    })(); // IIFE
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Guardar secciones en localStorage
+  // Sincronización 
 
   useEffect(() => {
     localStorage.setItem('notifications/v1/sections', JSON.stringify(savedSections));
+    NotificationManager.update(savedSections.map(section => section.id));
   }, [savedSections]);
+
+  // User Interface
 
   return (
     <>
@@ -146,7 +64,7 @@ function App() {
         <h1>Mi Horario Uniandes</h1>
       </div>
       <p className="highlight">
-        Este servicio de notificaciones es <strong>experimental</strong>. Puede no funcionar en todos los navegadores. Recomendamos mantener la aplicación abierta en una pestaña aparte.
+        Este servicio de notificaciones es <strong>experimental</strong>. Puede no funcionar en todos los navegadores. Debes mantener la aplicación abierta en una pestaña aparte.
         <br/>
         Por favor cuéntanos tu experiencia al correo <a href="mailto:opensource@uniandes.edu.co">opensource@uniandes.edu.co</a>
       </p>
@@ -165,7 +83,7 @@ function App() {
               <ul>
                 {
                   savedSections.map(section => (
-                    <li key={section.llave}>
+                    <li key={section.id}>
                       <SectionDetails sectionJSON={section} btnType="delete" callback={ deleteSection } />
                     </li>
                   ))
@@ -182,10 +100,9 @@ function App() {
             (event) => {
               event.preventDefault()
               const query = event.target.elements.query.value.trim().toUpperCase();
-              fetch(`${API}?nameInput=${query}`)
-                .then(response => response.json())
+              if (query === '') return;
+              APIManager.searchQuery(query)
                 .then(setSearchedSections)
-                .catch(error => setErrors((prevErrors) => [...prevErrors, error]));
             }
           }>
             <label htmlFor="query">NRC, Código o Nombre:</label>
@@ -197,7 +114,7 @@ function App() {
               searchedSections.length == 0 ?
                 <p>No encontramos resultados para tu búsqueda</p>
                 : searchedSections.map(section => (
-                  <li key={section.nrc}>
+                  <li key={section.id}>
                     <SectionDetails sectionJSON={section} btnType="create" callback={ createSection } />
                   </li>
                 ))
