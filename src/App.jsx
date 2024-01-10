@@ -27,7 +27,7 @@ function App() {
   }
 
   // Tiempo hasta la próxima actualización
-  const [timeToNextUpdate, setTimeToNextUpdate] = useState(null);
+  const [timeToNextUpdate, setTimeToNextUpdate] = useState(5);
 
   // Manejo de searchedSections
 

@@ -5,17 +5,17 @@ class NotificationManager {
   sectionIds = [];
 
   constructor(sectionsCallback, timerCallback) {
-    // Si ya existe una instancia de NotificationManager, devolver esa instancia
-    if (NotificationManager.instance) {
-      const instance = NotificationManager.instance
-      instance.sectionsCallback = sectionsCallback;
-      instance.timerCallback = timerCallback;
-      instance.setupNotifications();
-      return NotificationManager.instance;
+
+    // Singleton
+    if (!NotificationManager.instance) {
+      NotificationManager.instance = this;
     }
 
-    // Guardar la referencia a la instancia en la propiedad estática
-    NotificationManager.instance = this;
+    const instance = NotificationManager.instance
+
+    instance.sectionsCallback = sectionsCallback;
+    instance.timerCallback = timerCallback;
+    instance.setupNotifications();
   }
 
   setRepetition = (secondsToNextUpdate) => { 
