@@ -1,6 +1,6 @@
 import './App.css'
 import logo from '/logo.jpeg'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { SectionDetails } from './SectionDetails.jsx'
 import APIManager from './APIManager.js'
 import NotificationManager from './NotificationManager.js';
@@ -26,19 +26,8 @@ function App() {
     setSavedSections(newSections);
   }
 
-  // Manejo de notificaciones
-
-  NotificationManager.setCallback((newSections, timeLeft) => {
-    updateSections(newSections);
-    const intervalId = setInterval(() => {
-      timeLeft -= 1;
-      setTimeToNextUpdate(timeLeft);
-      if (timeLeft <= 0 ) {
-        clearInterval(intervalId);
-        return;
-      }
-    }, 1000);
-  });
+  // Tiempo hasta la próxima actualización
+  const [timeToNextUpdate, setTimeToNextUpdate] = useState(null);
 
   // Manejo de searchedSections
 
@@ -55,25 +44,18 @@ function App() {
     return [];
   });
 
-  // Tiempo hasta la próxima actualización
-  const [timeToNextUpdate, setTimeToNextUpdate] = useState(() => {
-    let timeLeft = 5;
-    const intervalId = setInterval(() => {
-      timeLeft -= 1;
-      setTimeToNextUpdate(timeLeft);
-      if (timeLeft <= 0 ) {
-        clearInterval(intervalId);
-        return;
-      }
-    }, 1000);
-    return timeLeft;
-  });
+  // Manejo de notificaciones
+  const notificationManagerRef = useRef(null);
+
+  if (!notificationManagerRef.current) {
+    notificationManagerRef.current = new NotificationManager(updateSections, setTimeToNextUpdate);
+  }
 
   // Sincronización 
 
   useEffect(() => {
     localStorage.setItem('notifications/v1/sections', JSON.stringify(savedSections));
-    NotificationManager.update(savedSections.map(section => section.id));
+    notificationManagerRef.current.update(savedSections.map(section => section.id));
   }, [savedSections]);
 
   // User Interface
@@ -116,7 +98,7 @@ function App() {
         
         <details className='card'>
           <summary className='card-summary'>Agrega una nueva notificación</summary>
-          <p className="highlight">Consultaremos Banner cada 5 minutos y te notificaremos cuando tus secciones guardadas tengan menos de 5 cupos disponibles.</p>
+          <p className="highlight">Consultaremos Banner cada minuto y te notificaremos cuando tus secciones guardadas liberen algún cupo.</p>
           <hr />
           <form onSubmit={
             (event) => {

@@ -4,17 +4,33 @@ class NotificationManager {
 
   sectionIds = [];
 
-  constructor() {
-    this.setupNotifications();
+  constructor(sectionsCallback, timerCallback) {
+    // Si ya existe una instancia de NotificationManager, devolver esa instancia
+    if (NotificationManager.instance) {
+      const instance = NotificationManager.instance
+      instance.sectionsCallback = sectionsCallback;
+      instance.timerCallback = timerCallback;
+      instance.setupNotifications();
+      return NotificationManager.instance;
+    }
+
+    // Guardar la referencia a la instancia en la propiedad estática
+    NotificationManager.instance = this;
   }
 
-  setCallback(callback) {
-    this.callback = callback;
+  setRepetition = (secondsToNextUpdate) => { 
+    let secondsLeft = secondsToNextUpdate;
+    const intervalId = setInterval(() => {
+      secondsLeft--;
+      this.timerCallback(secondsLeft);
+      if (secondsLeft === 0) {
+        clearInterval(intervalId);
+        this.repeat();
+      }
+    }, 1000);
   }
 
   setupNotifications = async () => {
-
-    console.info('Setting up notifications');
     
     let detail = '';
 
@@ -34,19 +50,10 @@ class NotificationManager {
     await navigator.serviceWorker.register('service-worker.js')
 
     // Enviar una notificación de prueba
-    this.sendNotification('¡Notificaciones activadas!', 'Te avisaremos cuando alguna de tus materias tenga menos de 5 cupos disponibles');
+    this.sendNotification('¡Notificaciones activadas!', 'Te avisaremos cuando alguna de tus materias libere un cupo');
 
-    // Prueba de notificación en 5 segundos
-    setTimeout(() => {
-      this.repeat();
-    }, 5 * 1000);
-
-    // Crear el intervalo de revisión
-    setInterval(() => {
-      console.info('Ejecutando intervalo de notificaciones');
-      this.repeat();
-    }, 5 * 60 * 1000);
-
+    // Primera notificación en 5 segundos
+    this.setRepetition(5);
   }
 
   sendNotification = async (title, body) => {
@@ -68,17 +75,21 @@ class NotificationManager {
 
   repeat = async () => {
 
+    const secondsToNextUpdate = 30;
+    this.setRepetition(secondsToNextUpdate);
+
+    // Actualizar datos
     const newSections = await Promise.all(
       this.sectionIds
         .map(APIManager.searchSection)
     )
 
-    if (this.callback) this.callback(newSections, 5 * 60);
+    this.sectionsCallback(newSections);
 
     const toNotify = newSections.filter(this.mustNotifySection)
     if (toNotify.length === 0) return;
-    const title = `Hay ${toNotify.length} secciones con pocos cupos`;
-    const body = toNotify.map(section => `${section.class}${section.course} Sec. ${section.section} - ${section.seatsDifference} cupos`).join('\n');
+    const title = `¡Se liberaron cupos para ${toNotify.length} secciones!`;
+    const body = toNotify.map(section => `${section.class}${section.course} - ${section.title}`).join('\n');
 
     this.sendNotification(title, body);
   }
@@ -89,10 +100,10 @@ class NotificationManager {
     const seatsDifference = availableSeats - enrolledStudents;
     section.seatsDifference = seatsDifference;
 
-    if (seatsDifference <= 5) return true;
+    if (seatsDifference > 0) return true;
     return false;
   }      
 
 }
 
-export default new NotificationManager();
+export default NotificationManager;
